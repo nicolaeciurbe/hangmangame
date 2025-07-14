@@ -1,36 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hangman Game
 
-## Getting Started
+This is a simple and interactive Hangman game built with Next.js. Challenge yourself to guess the hidden word by selecting letters one at a time. Each incorrect guess brings the hangman closer to completion—can you solve the word before it's too late?
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Randomly selected words for each game
+- Visual hangman drawing that updates with each wrong guess
+- Keyboard and on-screen letter input support
+- Responsive design for desktop and mobile play
+- Tracks wins and losses
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How to Play
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Start a new game to receive a hidden word represented by blank spaces.
+2. Guess letters by clicking them or using your keyboard.
+3. Correct guesses reveal the letter in the word; incorrect guesses add a part to the hangman.
+4. Win by guessing all the letters before the hangman is fully drawn.
+5. Lose if you reach the maximum number of incorrect guesses.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Enjoy testing your vocabulary and deduction skills with this classic word game!
