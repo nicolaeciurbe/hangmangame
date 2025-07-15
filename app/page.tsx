@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import HangmanDrawing from "./components/HangmanDrawing";
 
 // Import the word list from the public directory
@@ -18,7 +18,7 @@ function getRandomWordAndDefinition(): WordData {
   const entry = words[idx];
   return {
     word: entry.word.toLowerCase(),
-    definition: entry.definition,
+    definition: entry.definition, 
   };
 }
 
@@ -33,6 +33,27 @@ function isAlpha(ch: string) {
   return /^[a-zA-Z]$/.test(ch);
 }
 
+// Helper: interpolate between two colors
+function lerpColor(a: number[], b: number[], t: number) {
+  return a.map((v, i) => Math.round(v + (b[i] - v) * t));
+}
+
+// Helper: convert rgb array to css string
+function rgbToCss(rgb: number[]) {
+  return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+}
+
+// List of nice pastel colors to fade between
+const BG_COLORS: number[][] = [
+  [243, 246, 250], // #f3f6fa
+  [255, 239, 213], // #ffefd5 (papaya whip)
+  [224, 255, 255], // #e0ffff (light cyan)
+  [240, 255, 240], // #f0fff0 (honeydew)
+  [255, 228, 225], // #ffe4e1 (misty rose)
+  [245, 222, 179], // #f5deb3 (wheat)
+  [230, 230, 250], // #e6e6fa (lavender)
+];
+
 export default function Home() {
   const [word, setWord] = useState<string>("");
   const [definition, setDefinition] = useState<string | undefined>(undefined);
@@ -41,6 +62,36 @@ export default function Home() {
   const [showDef, setShowDef] = useState(false);
   const [status, setStatus] = useState<"playing" | "won" | "lost">("playing");
   const [loading, setLoading] = useState(true);
+
+  // Animated background state
+  const [bgColor, setBgColor] = useState(BG_COLORS[0]);
+  const colorIdx = useRef(0);
+  const animFrame = useRef<number | null>(null);
+
+  // Animate background color
+  useEffect(() => {
+    let t = 0;
+    let duration = 10; // seconds for each fade
+    let lastTime = performance.now();
+
+    function animate(now: number) {
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+      t += dt / duration;
+      if (t > 1) {
+        t = 0;
+        colorIdx.current = (colorIdx.current + 1) % BG_COLORS.length;
+      }
+      const from = BG_COLORS[colorIdx.current];
+      const to = BG_COLORS[(colorIdx.current + 1) % BG_COLORS.length];
+      setBgColor(lerpColor(from, to, t));
+      animFrame.current = requestAnimationFrame(animate);
+    }
+    animFrame.current = requestAnimationFrame(animate);
+    return () => {
+      if (animFrame.current) cancelAnimationFrame(animFrame.current);
+    };
+  }, []);
 
   useEffect(() => {
     startNewGame();
@@ -94,34 +145,39 @@ export default function Home() {
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen p-8 sm:p-20"
-      style={{ backgroundColor: "#f3f6fa" }}
+      className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-10"
+      style={{
+        background: `linear-gradient(135deg, ${rgbToCss(bgColor)} 0%, #fff 100%)`,
+        transition: "background 1s linear",
+      }}
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <main className="flex flex-col gap-8 items-center w-full max-w-6xl">
-        <h1 className="text-3xl font-bold mb-2 text-gray-900">Hangman</h1>
+      <main className="flex flex-col gap-12 items-center w-full max-w-7xl">
+        <h1 className="text-5xl sm:text-6xl font-extrabold mb-2 text-gray-900 drop-shadow-lg tracking-tight">
+          Hangman
+        </h1>
+        <div className="mb-1 text-sm text-gray-600 text-center max-w-2xl">
+          Guess the hidden word one letter at a time. Each incorrect guess adds a part to the hangman. You have {MAX_ATTEMPTS} wrong guesses before the game is over. Can you solve the word before it's too late?
+        </div>
         {loading ? (
-          <div className="text-lg text-gray-900">Loading word...</div>
+          <div className="text-2xl text-gray-900">Loading word...</div>
         ) : (
           <div className="w-full flex justify-center">
-            <div className="bg-white rounded-xl shadow-lg p-6 sm:p-10 flex flex-col lg:flex-row items-center w-full max-w-3xl">
-              {/* Hangman Drawing and Game Controls in the same box */}
-              <div className="flex flex-col lg:flex-row w-full gap-8 items-center">
-                {/* Hangman Drawing */}
-                <div className="flex justify-center items-center w-full lg:w-auto">
+            <div className="bg-white rounded-3xl shadow-2xl p-8 sm:p-16 flex flex-col lg:flex-row items-center w-full max-w-5xl scale-110">
+              <div className="flex flex-col lg:flex-row w-full gap-12 items-center">
+                <div className="flex justify-center items-center w-full lg:w-auto scale-125">
                   <HangmanDrawing wrongGuesses={wrong.size} maxAttempts={MAX_ATTEMPTS} />
                 </div>
-                {/* Game Controls */}
-                <div className="flex flex-col items-center gap-2 w-full">
-                  <div className="text-2xl font-mono tracking-widest mb-2 text-gray-900">
+                <div className="flex flex-col items-center gap-4 w-full">
+                  <div className="text-4xl font-mono tracking-widest mb-4 text-gray-900">
                     {getDisplayWord(word, guessed)}
                   </div>
-                  <div className="flex gap-1 flex-wrap justify-center">
+                  <div className="flex gap-2 flex-wrap justify-center">
                     {alphabet.map((letter) => (
                       <button
                         key={letter}
-                        className={`w-8 h-8 rounded border text-lg font-mono transition-all ${
+                        className={`w-12 h-12 rounded-lg border text-2xl font-mono transition-all ${
                           guessed.has(letter)
                             ? "bg-green-200 border-green-400 text-green-800"
                             : wrong.has(letter)
@@ -140,42 +196,42 @@ export default function Home() {
                       </button>
                     ))}
                   </div>
-                  <div className="mt-4 text-sm text-gray-800">
+                  <div className="mt-6 text-lg text-gray-800">
                     Wrong guesses:{" "}
                     <span className="font-mono">
                       {[...wrong].join(" ") || "-"}
                     </span>{" "}
                     ({wrong.size}/{MAX_ATTEMPTS})
                   </div>
-                  <div className="mt-6 w-full flex flex-col items-center">
+                  <div className="mt-8 w-full flex flex-col items-center">
                     {status === "won" && (
-                      <div className="text-green-700 text-lg font-semibold">
+                      <div className="text-green-700 text-2xl font-semibold">
                         🎉 You won! The word was <span className="font-mono">{word}</span>
                       </div>
                     )}
                     {status === "lost" && (
-                      <div className="text-red-700 text-lg font-semibold">
+                      <div className="text-red-700 text-2xl font-semibold">
                         😢 You lost! The word was <span className="font-mono">{word}</span>
                       </div>
                     )}
                     {(status === "won" || status === "lost") && (
                       <>
                         <button
-                          className="mt-4 px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                          className="mt-6 px-6 py-3 rounded-lg bg-blue-500 text-white text-lg font-bold hover:bg-blue-600 transition-colors"
                           onClick={resetGame}
                         >
                           Play again
                         </button>
                         {definition && (
-                          <div className="mt-4 flex flex-col items-center w-full">
+                          <div className="mt-6 flex flex-col items-center w-full">
                             <button
-                              className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 text-sm transition-colors"
+                              className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 text-base transition-colors"
                               onClick={() => setShowDef((v) => !v)}
                             >
                               {showDef ? "Hide definition" : "Show definition"}
                             </button>
                             {showDef && (
-                              <div className="mt-2 p-3 bg-gray-100 rounded text-gray-900 text-sm w-full flex justify-center">
+                              <div className="mt-3 p-4 bg-gray-100 rounded text-gray-900 text-base w-full flex justify-center">
                                 <div>
                                   <span className="font-bold">Definition:</span> {definition}
                                 </div>
@@ -191,7 +247,7 @@ export default function Home() {
             </div>
           </div>
         )}
-        <div className="mt-8 text-xs text-gray-500 text-center">
+        <div className="mt-12 text-sm text-gray-500 text-center">
           Words and definitions from the English dictionary.
         </div>
       </main>
